@@ -177,6 +177,7 @@ int main()
             wait(&status);
             file_write(name); //将数据从BUFF写入文件
             break;
+            case 9:
         default:
             printf("%s command not found\n", comm);
         }
