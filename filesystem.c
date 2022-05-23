@@ -7,7 +7,7 @@
 #define BlkSize 1024       //磁盘块大小为1K
 #define BlkPerNode 1024    //每个文件包含的最大的磁盘块数目
 #define DISK "disk.disk"
-#define BUFF "buffer.disk"                                  //读写文件时的缓冲文件
+#define BUFF "buffer.disk"                               //读写文件时的缓冲文件
 #define SuperBeg 0                                       //超级块的起始地址
 #define InodeBeg sizeof(SuperBlk)                        // i节点区启示地址
 #define BlockBeg (InodeBeg + InodeNum * sizeof(Inode))   //数据区起始地址
@@ -47,7 +47,7 @@ SuperBlk super_blk;       //文件系统的超级块
 FILE *Disk;
 
 /*指令集合*/
-char *command[] = {"fmt", "quit", "mkdir", "rmdir", "cd", "ls", "mk", "rm", "vim"};
+char *command[] = {"fmt", "quit", "mkdir", "rmdir", "cd", "ls", "mk", "rm", "vim", "pr"};
 char path[40] = "monster: root";
 
 int init_fs(void);   //初始化文件系统
@@ -78,6 +78,8 @@ int free_blk(int); //释放相应的磁盘块
 int get_blk(void); //获取磁盘块
 
 void change_path(char *);
+
+void print_info(void);
 
 int main()
 {
@@ -177,7 +179,9 @@ int main()
             wait(&status);
             file_write(name); //将数据从BUFF写入文件
             break;
-            case 9:
+        case 9:
+            print_info();
+            break;
         default:
             printf("%s command not found\n", comm);
         }
@@ -757,4 +761,17 @@ int file_write(char *name)
 
     fclose(fp);
     return 1;
+}
+
+void print_info(void)
+{
+    int color = 32;
+    int free_blk_count = BlkNum - super_blk.blk_used;
+    int free_inode_count = InodeNum - super_blk.inode_used;
+    printf("\n");
+    printf("\tFree space on disk: \033[1;%dm%d blocks\033[0m(1KB per block).\n", color, free_blk_count);
+    printf("\tFree inode count: \033[1;%dm%d\033[0m.\n", color, free_inode_count);
+    printf("\n");
+
+    return;
 }
