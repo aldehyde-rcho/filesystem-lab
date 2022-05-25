@@ -766,10 +766,21 @@ int file_write(char *name)
 void print_info(void)
 {
     int color = 32;
-    int free_blk_count = BlkNum - super_blk.blk_used;
+    double free_space = BlkNum - super_blk.blk_used;
     int free_inode_count = InodeNum - super_blk.inode_used;
+    int unit_counter = 0;
+    char *space_unit_string[3] = {"KB", "MB", "GB"};
+    while (free_space > 1024)
+    {
+        free_space = free_space / 1024;
+        unit_counter++;
+        if (unit_counter >= 2)
+        {
+            break;
+        }
+    }
     printf("\n");
-    printf("\tFree space on disk: \033[1;%dm%d blocks\033[0m(1KB per block).\n", color, free_blk_count);
+    printf("\tFree space on disk: \033[1;%dm%d %s\033[0m.\n", color, free_space, space_unit_string[unit_counter]);
     printf("\tFree inode count: \033[1;%dm%d\033[0m.\n", color, free_inode_count);
     printf("\n");
 
