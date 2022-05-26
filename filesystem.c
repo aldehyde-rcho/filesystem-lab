@@ -780,7 +780,7 @@ void print_info(void)
         }
     }
     printf("\n");
-    printf("\tFree space on disk: \033[1;%dm%d %s\033[0m.\n", color, free_space, space_unit_string[unit_counter]);
+    printf("\tFree space on disk: \033[1;%dm%.3f %s\033[0m.\n", color, free_space, space_unit_string[unit_counter]);
     printf("\tFree inode count: \033[1;%dm%d\033[0m.\n", color, free_inode_count);
     printf("\n");
 
