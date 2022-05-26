@@ -80,6 +80,7 @@ int get_blk(void); //获取磁盘块
 void change_path(char *);
 
 void print_info(void);
+void print_blk_map();
 
 int main()
 {
@@ -251,6 +252,10 @@ int format_fs(void)
     dir_table[1].inode_num = 0;
 
     strcpy(path, "monster: root");
+
+    char ch = '\0';
+    fseek(Disk, BlockBeg + BlkSize * BlkNum, SEEK_SET);
+    fwrite(&ch, sizeof(char), 1, Disk);
 
     return 1;
 }
@@ -785,4 +790,16 @@ void print_info(void)
     printf("\n");
 
     return;
+}
+
+void print_blk_map()
+{
+    for (int i = 0; i < BlkNum; i++)
+    {
+        printf("%d", super_blk.blk_map[i]);
+        // if (i % 8 == 0)
+        //     printf("\t");
+        if ((i + 1) % 1024 == 0)
+            printf("\n");
+    }
 }
