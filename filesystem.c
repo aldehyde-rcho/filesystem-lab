@@ -5,13 +5,13 @@
 #define InodeNum 1024	   // i节点数目
 #define BlkNum (80 * 1024) //磁盘块的数目
 #define RevNum 5		   //恢复块的数目
-#define BlkSize 1024       //磁盘块大小为1K
-#define BlkPerNode 1024    //每个文件包含的最大的磁盘块数目
+#define BlkSize 1024	   //磁盘块大小为1K
+#define BlkPerNode 1024	   //每个文件包含的最大的磁盘块数目
 #define DISK "disk.disk"
-#define BUFF "buffer.disk"                               //读写文件时的缓冲文件
-#define SuperBeg 0                                       //超级块的起始地址
-#define InodeBeg sizeof(SuperBlk)                        // i节点区启示地址
-#define BlockBeg (InodeBeg + InodeNum * sizeof(Inode))   //数据区起始地址
+#define BUFF "buffer.disk"								 //读写文件时的缓冲文件
+#define SuperBeg 0										 //超级块的起始地址
+#define InodeBeg sizeof(SuperBlk)						 // i节点区启示地址
+#define BlockBeg (InodeBeg + InodeNum * sizeof(Inode))	 //数据区起始地址
 #define MaxDirNum (BlkPerNode * (BlkSize / sizeof(Dir))) //每个目录最大的文件数
 #define DirPerBlk (BlkSize / sizeof(Dir))				 //每个磁盘块包含的最大目录项
 #define Directory 0
@@ -52,8 +52,8 @@ FILE *Disk;
 
 /*指令集合*/
 
-char *command[] = {"fmt", "quit", "mkdir", "rmdir", "cd", "ls", "mk", "rm", "vim", "pr" "rev"};
-char path[40] = "monster: root";
+char *command[] = {"fmt", "quit", "mkdir", "rmdir", "cd", "ls", "mk", "rm", "vim", "pr", "rev"};
+char path[40] = "DISK: root";
 
 int init_fs(void);	 //初始化文件系统
 int close_fs(void);	 //关闭文件系统
@@ -65,10 +65,9 @@ int show_dir(int);				 //显示目录
 int make_file(int, char *, int); //创建新的目录或文件
 int del_file(int, char *, int);	 //删除子目录
 int enter_dir(int, char *);		 //进入子目录
-// int rev_dir(int,char*);
-int rev_dir(int, int, char *); //恢复上一个删除的目录
-int file_write(char *);		   //写文件
-int file_read(char *);		   //读文件
+int rev_dir(int, int, char *);	 //恢复上一个删除的目录
+int file_write(char *);			 //写文件
+int file_read(char *);			 //读文件
 
 int adjust_dir(char *); //删除子目录后，调整原目录，使中间无空隙
 
@@ -92,106 +91,106 @@ void print_blk_map();
 int main()
 {
 
-    char comm[30], name[30];
-    char *arg[] = {"vim", BUFF, NULL};
-    int i, quit = 0, choice, status;
+	char comm[30], name[30];
+	char *arg[] = {"vim", BUFF, NULL};
+	int i, quit = 0, choice, status;
 
-    Disk = fopen(DISK, "r+");
-    init_fs();
+	Disk = fopen(DISK, "r+");
+	init_fs();
 
-    while (1)
-    {
-        printf("%s# ", path);
-        scanf("%s", comm);
-        choice = -1;
+	while (1)
+	{
+		printf("%s# ", path);
+		scanf("%s", comm);
+		choice = -1;
 
-        for (i = 0; i < CommanNum; ++i)
-        {
-            if (strcmp(comm, command[i]) == 0)
-            {
-                choice = i;
-                break;
-            }
-        }
+		for (i = 0; i < CommanNum; ++i)
+		{
+			if (strcmp(comm, command[i]) == 0)
+			{
+				choice = i;
+				break;
+			}
+		}
 
-        switch (choice)
-        {
-        /*格式化文件系统*/
-        case 0:
-            format_fs();
-            break;
-        /*退出文件系统*/
-        case 1:
-            quit = 1;
-            break;
-        /*创建子目录*/
-        case 2:
-            scanf("%s", name);
-            make_file(inode_num, name, Directory);
-            break;
-        /*删除子目录*/
-        case 3:
-            scanf("%s", name);
-            if (type_check(name) != Directory)
-            {
-                printf("rmdir: failed to remove '%s': Not a directory\n", name);
-                break;
-            }
-            del_file(inode_num, name, 0);
-            break;
-        /*进入子目录*/
-        case 4:
-            scanf("%s", name);
-            if (type_check(name) != Directory)
-            {
-                printf("cd: %s: Not a directory\n", name);
-                break;
-            }
-            if (enter_dir(inode_num, name))
-            {
-                change_path(name); //改变路径前缀
-            }
-            break;
-        /*显示目录内容*/
-        case 5:
-            show_dir(inode_num);
-            break;
-        /*创建文件*/
-        case 6:
-            scanf("%s", name);
-            make_file(inode_num, name, File);
-            break;
-        /*删除文件*/
-        case 7:
-            scanf("%s", name);
-            if (type_check(name) != File)
-            {
-                printf("rm: cannot remove '%s': Not a file\n", name);
-                break;
-            }
-            del_file(inode_num, name, 0);
-            break;
-        /*对文件进行编辑*/
-        case 8:
-            scanf("%s", name);
-            if (type_check(name) != File)
-            {
-                printf("vim: cannot edit '%s': Not a file\n", name);
-                break;
-            }
+		switch (choice)
+		{
+		/*格式化文件系统*/
+		case 0:
+			format_fs();
+			break;
+		/*退出文件系统*/
+		case 1:
+			quit = 1;
+			break;
+		/*创建子目录*/
+		case 2:
+			scanf("%s", name);
+			make_file(inode_num, name, Directory);
+			break;
+		/*删除子目录*/
+		case 3:
+			scanf("%s", name);
+			if (type_check(name) != Directory)
+			{
+				printf("rmdir: failed to remove '%s': Not a directory\n", name);
+				break;
+			}
+			del_file(inode_num, name, 0);
+			break;
+		/*进入子目录*/
+		case 4:
+			scanf("%s", name);
+			if (type_check(name) != Directory)
+			{
+				printf("cd: %s: Not a directory\n", name);
+				break;
+			}
+			if (enter_dir(inode_num, name))
+			{
+				change_path(name); //改变路径前缀
+			}
+			break;
+		/*显示目录内容*/
+		case 5:
+			show_dir(inode_num);
+			break;
+		/*创建文件*/
+		case 6:
+			scanf("%s", name);
+			make_file(inode_num, name, File);
+			break;
+		/*删除文件*/
+		case 7:
+			scanf("%s", name);
+			if (type_check(name) != File)
+			{
+				printf("rm: cannot remove '%s': Not a file\n", name);
+				break;
+			}
+			del_file(inode_num, name, 0);
+			break;
+		/*对文件进行编辑*/
+		case 8:
+			scanf("%s", name);
+			if (type_check(name) != File)
+			{
+				printf("vim: cannot edit '%s': Not a file\n", name);
+				break;
+			}
 
-            file_read(name); //将数据从文件写入BUFF
-            if (!fork())
-            {
-                execvp("vim", arg);
-            }
-            wait(&status);
-            file_write(name); //将数据从BUFF写入文件
-            break;
-        case 9:
-            print_info();
-            break;
-        /*恢复文件*/
+			file_read(name); //将数据从文件写入BUFF
+			if (!fork())
+			{
+				execvp("vim", arg);
+			}
+			wait(&status);
+			file_write(name); //将数据从BUFF写入文件
+			break;
+		case 9:
+			print_info();
+			break;
+		/*恢复文件*/
 		case 10:
 			if (super_blk.rev_used <= 0)
 				printf("rev:cannot rev,there is no file\n");
@@ -203,17 +202,17 @@ int main()
 				super_blk.rev_used--;
 			}
 			break;
-        default:
-            printf("%s command not found\n", comm);
-        }
+		default:
+			printf("%s command not found\n", comm);
+		}
 
-        if (quit)
-            break;
-    }
-    close_fs();
+		if (quit)
+			break;
+	}
+	close_fs();
 
-    fclose(Disk);
-    return 0;
+	fclose(Disk);
+	return 0;
 }
 
 int init_fs(void)
@@ -244,42 +243,41 @@ int close_fs(void)
 int format_fs(void)
 {
 
+	/*格式化inode_map,保留根目录*/
+	memset(super_blk.inode_map, 0, sizeof(super_blk.inode_map));
+	super_blk.inode_map[0] = 1;
+	super_blk.inode_used = 1;
+	/*格式化blk_map,保留第一个磁盘块给根目录*/
+	memset(super_blk.blk_map, 0, sizeof(super_blk.blk_map));
+	super_blk.blk_map[0] = 1;
+	super_blk.blk_used = 1;
 
-    /*格式化inode_map,保留根目录*/
-    memset(super_blk.inode_map, 0, sizeof(super_blk.inode_map));
-    super_blk.inode_map[0] = 1;
-    super_blk.inode_used = 1;
-    /*格式化blk_map,保留第一个磁盘块给根目录*/
-    memset(super_blk.blk_map, 0, sizeof(super_blk.blk_map));
-    super_blk.blk_map[0] = 1;
-    super_blk.blk_used = 1;
+	inode_num = 0; //将当前目录改为根目录
 
-    inode_num = 0; //将当前目录改为根目录
+	/*读取根目录的i节点*/
+	fseek(Disk, InodeBeg, SEEK_SET);
+	fread(&curr_inode, sizeof(Inode), 1, Disk);
+	//	printf("%d\n",curr_inode.file_size/sizeof(Dir));
 
-    /*读取根目录的i节点*/
-    fseek(Disk, InodeBeg, SEEK_SET);
-    fread(&curr_inode, sizeof(Inode), 1, Disk);
-    //	printf("%d\n",curr_inode.file_size/sizeof(Dir));
+	curr_inode.file_size = 2 * sizeof(Dir);
+	curr_inode.blk_num = 1;
+	curr_inode.blk_identifier[0] = 0; //第零块磁盘一定是根目录的
 
-    curr_inode.file_size = 2 * sizeof(Dir);
-    curr_inode.blk_num = 1;
-    curr_inode.blk_identifier[0] = 0; //第零块磁盘一定是根目录的
+	/*仅.和..目录项有效*/
+	dir_num = 2;
 
-    /*仅.和..目录项有效*/
-    dir_num = 2;
+	strcpy(dir_table[0].name, ".");
+	dir_table[0].inode_num = 0;
+	strcpy(dir_table[1].name, "..");
+	dir_table[1].inode_num = 0;
 
-    strcpy(dir_table[0].name, ".");
-    dir_table[0].inode_num = 0;
-    strcpy(dir_table[1].name, "..");
-    dir_table[1].inode_num = 0;
+	strcpy(path, "DISK: root");
 
-    strcpy(path, "monster: root");
+	char ch = '\0';
+	fseek(Disk, BlockBeg + BlkSize * BlkNum, SEEK_SET);
+	fwrite(&ch, sizeof(char), 1, Disk);
 
-    char ch = '\0';
-    fseek(Disk, BlockBeg + BlkSize * BlkNum, SEEK_SET);
-    fwrite(&ch, sizeof(char), 1, Disk);
-
-    return 1;
+	return 1;
 }
 
 int open_dir(int inode)
@@ -810,36 +808,36 @@ int file_write(char *name)
 
 void print_info(void)
 {
-    int color = 32;
-    double free_space = BlkNum - super_blk.blk_used;
-    int free_inode_count = InodeNum - super_blk.inode_used;
-    int unit_counter = 0;
-    char *space_unit_string[3] = {"KB", "MB", "GB"};
-    while (free_space > 1024)
-    {
-        free_space = free_space / 1024;
-        unit_counter++;
-        if (unit_counter >= 2)
-        {
-            break;
-        }
-    }
-    printf("\n");
-    printf("\tFree space on disk: \033[1;%dm%.3f %s\033[0m.\n", color, free_space, space_unit_string[unit_counter]);
-    printf("\tFree inode count: \033[1;%dm%d\033[0m.\n", color, free_inode_count);
-    printf("\n");
+	int color = 32;
+	double free_space = BlkNum - super_blk.blk_used;
+	int free_inode_count = InodeNum - super_blk.inode_used;
+	int unit_counter = 0;
+	char *space_unit_string[3] = {"KB", "MB", "GB"};
+	while (free_space > 1024)
+	{
+		free_space = free_space / 1024;
+		unit_counter++;
+		if (unit_counter >= 2)
+		{
+			break;
+		}
+	}
+	printf("\n");
+	printf("\tFree space on disk: \033[1;%dm%.3f %s\033[0m.\n", color, free_space, space_unit_string[unit_counter]);
+	printf("\tFree inode count: \033[1;%dm%d\033[0m.\n", color, free_inode_count);
+	printf("\n");
 
-    return;
+	return;
 }
 
 void print_blk_map()
 {
-    for (int i = 0; i < BlkNum; i++)
-    {
-        printf("%d", super_blk.blk_map[i]);
-        // if (i % 8 == 0)
-        //     printf("\t");
-        if ((i + 1) % 1024 == 0)
-            printf("\n");
-    }
+	for (int i = 0; i < BlkNum; i++)
+	{
+		printf("%d", super_blk.blk_map[i]);
+		// if (i % 8 == 0)
+		//     printf("\t");
+		if ((i + 1) % 1024 == 0)
+			printf("\n");
+	}
 }
