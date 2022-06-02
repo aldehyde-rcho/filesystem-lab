@@ -939,10 +939,10 @@ int file_write(char *name)
 void print_info(void)
 {
 	int color = 32;
-	double free_space = BlkNum - super_blk.blk_used;
+	double free_space = (BlkNum - super_blk.blk_used)*BlkSize;
 	int free_inode_count = InodeNum - super_blk.inode_used;
 	int unit_counter = 0;
-	char *space_unit_string[3] = {"KB", "MB", "GB"};
+	char *space_unit_string[4] = {"B", "KB", "MB", "GB"};
 	while (free_space > 1024)
 	{
 		free_space = free_space / 1024;
