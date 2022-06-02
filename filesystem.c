@@ -52,7 +52,7 @@ FILE *Disk;
 
 /*指令集合*/
 
-char *command[] = {"fmt", "quit", "mkdir", "rmdir", "cd", "ls", "mk", "rm", "vim", "pr", "rev"};
+char *command[] = {"fmt", "quit", "mkdir", "rmdir", "cd", "ls", "mk", "rm", "vim", "pr", "del", "deldir", "rev"};
 char path[40] = "DISK: root";
 
 int init_fs(void);	 //初始化文件系统
@@ -63,23 +63,27 @@ int open_dir(int);				 //打开相应inode对应的目录
 int close_dir(int);				 //保存相应inode的目录
 int show_dir(int);				 //显示目录
 int make_file(int, char *, int); //创建新的目录或文件
-int del_file(int, char *, int);	 //删除子目录
-int enter_dir(int, char *);		 //进入子目录
-int rev_dir(int, int, char *);	 //恢复上一个删除的目录
-int file_write(char *);			 //写文件
-int file_read(char *);			 //读文件
+int remove_file(int, char *, int);
+int del_file(int, char *, int); //删除子目录
+int enter_dir(int, char *);		//进入子目录
+int rev_dir(int, int, char *);	//恢复上一个删除的目录
+int file_write(char *);			//写文件
+int file_read(char *);			//读文件
 
 int adjust_dir(char *); //删除子目录后，调整原目录，使中间无空隙
+int adjust_dir_del(char *);
 
 int check_name(int, char *); //检查重命名,返回-1表示名字不存在，否则返回相应inode
 int type_check(char *);		 //确定文件的类型
 
-int free_inode(int);		  //释放相应的inode
+int free_inode(int); //释放相应的inode
+int del_inode(int);
 int apply_inode();			  //申请inode,返还相应的inode号，返还-1则INODE用完
 int init_dir_inode(int, int); //初始化新建目录的inode
 int init_file_inode(int);	  //初始化新建文件的inode
 
 int free_blk(int); //释放相应的磁盘块
+int del_blk(int);
 
 int get_blk(void); //获取磁盘块
 
@@ -128,7 +132,7 @@ int main()
 			scanf("%s", name);
 			make_file(inode_num, name, Directory);
 			break;
-		/*删除子目录*/
+		/*彻底删除子目录*/
 		case 3:
 			scanf("%s", name);
 			if (type_check(name) != Directory)
@@ -136,7 +140,7 @@ int main()
 				printf("rmdir: failed to remove '%s': Not a directory\n", name);
 				break;
 			}
-			del_file(inode_num, name, 0);
+			remove_file(inode_num, name, 0);
 			break;
 		/*进入子目录*/
 		case 4:
@@ -160,7 +164,7 @@ int main()
 			scanf("%s", name);
 			make_file(inode_num, name, File);
 			break;
-		/*删除文件*/
+		/*彻底删除文件*/
 		case 7:
 			scanf("%s", name);
 			if (type_check(name) != File)
@@ -168,7 +172,7 @@ int main()
 				printf("rm: cannot remove '%s': Not a file\n", name);
 				break;
 			}
-			del_file(inode_num, name, 0);
+			remove_file(inode_num, name, 0);
 			break;
 		/*对文件进行编辑*/
 		case 8:
@@ -190,8 +194,28 @@ int main()
 		case 9:
 			print_info();
 			break;
-		/*恢复文件*/
+		/*移除文件*/
 		case 10:
+			scanf("%s", name);
+			if (type_check(name) != File)
+			{
+				printf("del: cannot delete '%s': Not a file\n", name);
+				break;
+			}
+			del_file(inode_num, name, 0);
+			break;
+		/*移除目录*/
+		case 11:
+			scanf("%s", name);
+			if (type_check(name) != Directory)
+			{
+				printf("deldir: failed to remove '%s': Not a directory\n", name);
+				break;
+			}
+			del_file(inode_num, name, 0);
+			break;
+		/*恢复文件*/
+		case 12:
 			if (super_blk.rev_used <= 0)
 				printf("rev:cannot rev,there is no file\n");
 			else
@@ -462,7 +486,7 @@ int enter_dir(int inode, char *name)
 }
 
 /*递归删除文件夹*/
-int del_file(int inode, char *name, int deepth)
+int remove_file(int inode, char *name, int deepth)
 {
 	int child, i, t;
 	Inode temp;
@@ -504,7 +528,7 @@ int del_file(int inode, char *name, int deepth)
 
 	for (i = 2; i < dir_num; ++i)
 	{
-		del_file(child, dir_table[i].name, deepth + 1);
+		remove_file(child, dir_table[i].name, deepth + 1);
 	}
 
 	enter_dir(child, ".."); //返回上层目录
@@ -525,6 +549,71 @@ int del_file(int inode, char *name, int deepth)
 
 	return 1;
 }
+
+int del_file(int inode, char *name, int deepth)
+{
+	int child, i, t;
+	Inode temp;
+
+	if (!strcmp(name, ".") || !strcmp(name, ".."))
+	{
+		/*不允许删除.和..*/
+		printf("rmdir: failed to remove '%s': Invalid argument\n", name);
+		return 0;
+	}
+
+	child = check_name(inode, name);
+
+	if (child == -1)
+	{ //子目录不存在
+		printf("rmdir: failed to remove '%s': No such file or directory\n", name);
+	}
+
+	/*读取当前子目录的Inode结构*/
+	fseek(Disk, InodeBeg + sizeof(Inode) * child, SEEK_SET);
+	fread(&temp, sizeof(Inode), 1, Disk);
+
+	if (temp.type == File)
+	{
+		/*如果是文件则释放相应Inode即可*/
+		del_inode(child);
+		/*若是最上层文件，需调整目录*/
+		if (deepth == 0)
+		{
+			adjust_dir_del(name);
+		}
+		return 1;
+	}
+	else
+	{
+		/*否则进入子目录*/
+		enter_dir(inode, name);
+	}
+
+	for (i = 2; i < dir_num; ++i)
+	{
+		del_file(child, dir_table[i].name, deepth + 1);
+	}
+
+	enter_dir(child, ".."); //返回上层目录
+	del_inode(child);
+
+	if (deepth == 0)
+	{
+		/*删除自身在目录中的内容*/
+		if (dir_num / DirPerBlk != (dir_num - 1) / DirPerBlk)
+		{
+			/*有磁盘块可以释放*/
+			curr_inode.blk_num--;
+			t = curr_inode.blk_identifier[curr_inode.blk_num];
+			del_blk(t); //释放相应的磁盘块
+		}
+		adjust_dir_del(name); //因为可能在非末尾处删除，因此要移动dir_table的内容
+	}						  /*非初始目录直接释放Inode*/
+
+	return 1;
+}
+
 int rev_dir(int pos, int num, char *name)
 {
 	// Inode temp;
@@ -542,6 +631,25 @@ int rev_dir(int pos, int num, char *name)
 	return 1;
 }
 int adjust_dir(char *name)
+{
+	int pos;
+	for (pos = 0; pos < dir_num; ++pos)
+	{
+		/*先找到被删除的目录的位置*/
+		if (strcmp(dir_table[pos].name, name) == 0)
+			break;
+	}
+	for (pos++; pos < dir_num; ++pos)
+	{
+		/*pos之后的元素都往前移动一位*/
+		dir_table[pos - 1] = dir_table[pos];
+	}
+
+	dir_num--;
+	return 1;
+}
+
+int adjust_dir_del(char * name)
 {
 	int pos;
 	for (pos = 0; pos < dir_num; ++pos)
@@ -643,6 +751,23 @@ int free_inode(int inode)
 		free_blk(temp.blk_identifier[i]);
 	}
 
+	super_blk.inode_map[inode] = 0;
+	super_blk.inode_used--;
+	return 1;
+}
+
+int del_inode(int inode)
+{
+	Inode temp;
+	int i;
+	fseek(Disk, InodeBeg + sizeof(Inode) * inode, SEEK_SET);
+	fread(&temp, sizeof(Inode), 1, Disk);
+
+	for (i = 0; i < temp.blk_num; ++i)
+	{
+		del_blk(temp.blk_identifier[i]);
+	}
+
 	// super_blk.inode_map[inode]=0;
 	// super_blk.inode_used--;
 	return 1;
@@ -651,9 +776,14 @@ int free_inode(int inode)
 /*释放磁盘块*/
 int free_blk(int blk_pos)
 {
+	super_blk.blk_used--;
+	super_blk.blk_map[blk_pos] = 0;
+}
 
-	// super_blk.blk_used--;
-	// super_blk.blk_map[blk_pos]=0;
+int del_blk(int blk_pos)
+{
+	super_blk.blk_used--;
+	super_blk.blk_map[blk_pos] = 0;
 }
 
 /*检查重命名*/
